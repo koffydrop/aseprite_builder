@@ -1,11 +1,13 @@
 name: Build and deploy Aseprite
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 0 * * *"
   push:
     branches:
       - master
+      - fix
 
 env:
   BUILD_TYPE: Release
@@ -42,7 +44,7 @@ jobs:
           key: cached_version
       - name: Should we start new build?
         id: should_build
-        if: steps.version_check.outputs.cache-hit != 'true'
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/fix' || steps.version_check.outputs.cache-hit != 'true'
         run: echo "should_build=true" >> $GITHUB_OUTPUT
       - name: Create Release
         id: create_release
@@ -65,7 +67,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest, macOS-latest]
       fail-fast: false
     steps:
       - name: (Windows) Install dependencies
@@ -87,8 +89,13 @@ jobs:
         with:
           path: skia
           key: skia-${{ matrix.os }}-cache
+      - name: Download Skia if not in cache (linux)
+        if: steps.skia-cache.outputs.cache-hit != 'true' && matrix.os == 'ubuntu-latest'
+        run: |
+          curl -o Skia-${{ runner.os }}-Release-X64.zip -L https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-${{ runner.os }}-Release-x64-libstdc++.zip
+          unzip Skia-${{ runner.os }}-Release-X64.zip -d skia
       - name: Download Skia if not in cache
-        if: steps.skia-cache.outputs.cache-hit != 'true'
+        if: steps.skia-cache.outputs.cache-hit != 'true' && matrix.os != 'ubuntu-latest'
         run: |
           curl -o Skia-${{ runner.os }}-Release-X64.zip -L https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-${{ runner.os }}-Release-x64.zip
           unzip Skia-${{ runner.os }}-Release-X64.zip -d skia
