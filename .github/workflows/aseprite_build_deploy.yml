@@ -131,8 +131,8 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release Aseprite ${{ steps.version_info.outputs.latest_tag }}
-          tag_name: ${{ steps.version_info.outputs.latest_tag }}
+          name: Release Aseprite ${{ needs.check-version.outputs.latest_tag }}
+          tag_name: ${{ needs.check-version.outputs.latest_tag }}
           body: |
             ${{ needs.check-version.outputs.version_info }}
           files: |
